@@ -5,7 +5,8 @@ from vacuum_world.search.problem import SearchProblem
 from .base_search import BaseSearch
 
 
-# Goal is to implement the breadth-first algorithm, which walks through the search tree level by level, exploring all nodes at the present depth before moving on to the nodes at the next depth level. This is achieved using a queue (FIFO) data structure for the frontier.
+# Goal is to implement the breadth-first algorithm, which walks through the search tree level by level, 
+# exploring all nodes at the present depth before moving on to the nodes at the next depth level. This is achieved using a queue (FIFO) data structure for the frontier.
 class BreadthFirstSearch(BaseSearch):
 
     def __init__(self):
