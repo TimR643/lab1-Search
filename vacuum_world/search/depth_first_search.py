@@ -1,6 +1,12 @@
-from typing import List
+"""
+Depth First Search implementation.
+Keeps expanding a successor of the last expanded state until none is left
+(or the goal is reached), and backtracks when needed.
+"""
+from typing import List, Set
 from vacuum_world.search.search_node import SearchNode
 from vacuum_world.search.problem import SearchProblem
+from vacuum_world.world.grid_pos import GridPos
 from .base_search import BaseSearch
 
 
@@ -8,39 +14,56 @@ class DepthFirstSearch(BaseSearch):
 
     def __init__(self):
         super().__init__()
-
-#the goal is to implement a depth-first algorithm, which always expands the deepest node first  
+        # LIFO stack of SearchNode: the deepest node is always expanded first
+        self.frontier: List[SearchNode] = []
+        # SearchNode objects already expanded, in expansion order
+        self.explored: List[SearchNode] = []
+        # GridPos of the expanded nodes, for O(1) lookups
+        self.explored_states: Set[GridPos] = set()
+    
     def search(self, problem: SearchProblem) -> List[SearchNode]:
-        self.path = [] #reset the path to empty list 
-        self.frontier = [SearchNode(problem.get_initial_state())]  #finding initial state and creating the trees root
-        self.explored = [] #empty the explored list
-        frontier_states = {problem.get_initial_state()} #finding the intial state
-        explored_states = set()
+        """
+        Perform a depth first search to find a path to goal.
 
-        while self.frontier: #do while there are still nodes in the frontier
-            node = self.frontier.pop() # pop the last node from the frontier -> LIFO
-            frontier_states.remove(node.get_state()) #remove the state of this taken node
-
-            if problem.is_goal_state(node.get_state()): #check for goal state
-                self.path = node.get_path_from_root() #path = path from root to this node
-                return self.path
-
-            self.explored.append(node) #append new node
-            explored_states.add(node.get_state())
-
-            if node.get_cost() >= self.max_depth:
+        The path returned is the first one found, which is generally not the
+        shortest one.
+        """
+        self.path = []
+        self.frontier = []
+        self.explored = []
+        self.explored_states = set()
+        
+        initial_state = problem.get_initial_state()
+        self.frontier.append(SearchNode(initial_state, None, None, 0.0))
+        
+        while self.frontier:
+            # Expand the newest node of the stack, i.e. the deepest one
+            current_node = self.frontier.pop()
+            current_state = current_node.get_state()
+            
+            # The same state can be pushed several times, only expand it once
+            if current_state in self.explored_states:
                 continue
-
-            # Reverse insertion preserves the maze's documented N/S/E/W order
-            # when items are removed from the LIFO stack.
-            for state in reversed(problem.get_successors(node.get_state())):
-                if state in explored_states or state in frontier_states:
+            
+            self.explored.append(current_node)
+            self.explored_states.add(current_state)
+            
+            # Goal test at expansion time, since the depth of the goal is unknown
+            if problem.is_goal_state(current_state):
+                self.path = current_node.get_path_from_root()
+                return self.path
+            
+            if current_node.get_cost() >= self.max_depth:
+                continue
+            
+            for successor in problem.get_successors(current_state):
+                if successor in self.explored_states:
                     continue
-                child = SearchNode(state, node, cost=node.get_cost() + 1)
-                self.frontier.append(child)
-                frontier_states.add(state)
-
-            return []
+                
+                self.frontier.append(SearchNode(successor, current_node, None, current_node.get_cost() + 1))
+        
+        # The frontier is empty: the goal is unreachable
+        return []
     
     
     def get_frontier_nodes(self) -> List[SearchNode]:
